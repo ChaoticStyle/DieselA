@@ -138,19 +138,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="kpi-row">
       <div class="kpi"><div class="kpi-v active" id="kpi-active">0</div><div class="kpi-l">Active / Being Worked</div></div>
       <div class="kpi"><div class="kpi-v sold" id="kpi-sold">0</div><div class="kpi-l">Sold</div></div>
-      <div class="kpi"><div class="kpi-v notsold" id="kpi-notsold">0</div><div class="kpi-l">Not Sold</div></div>
+      <div class="kpi"><div class="kpi-v notsold" id="kpi-notsold">0</div><div class="kpi-l">Bad</div></div>
       <div class="kpi"><div class="kpi-v total" id="kpi-total">0</div><div class="kpi-l">Total Leads</div></div>
     </div>
 
     <div class="card" style="margin-bottom:16px">
-      <h3>Monthly Trend — Active / Sold / Not Sold</h3>
-      <div class="legend"><span><i class="dot active"></i>Active</span><span><i class="dot sold"></i>Sold</span><span><i class="dot notsold"></i>Not Sold</span></div>
+      <h3>Monthly Trend — Active / Sold / Bad</h3>
+      <div class="legend"><span><i class="dot active"></i>Active</span><span><i class="dot sold"></i>Sold</span><span><i class="dot notsold"></i>Bad</span></div>
       <div class="trend-row trend-head">
         <div class="trend-month">Month</div>
         <div></div>
         <div class="trend-num v-active">Active</div>
         <div class="trend-num v-sold">Sold</div>
-        <div class="trend-num v-notsold">Not Sold</div>
+        <div class="trend-num v-notsold">Bad</div>
         <div class="trend-num">Total</div>
       </div>
       <div id="trend"></div>
@@ -164,7 +164,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <th data-k="name">Product</th>
             <th data-k="active" class="num">Active</th>
             <th data-k="sold" class="num">Sold</th>
-            <th data-k="notSold" class="num" title="Not Sold: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has not sold.">Not Sold</th>
+            <th data-k="notSold" class="num" title="Bad: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has Bad.">Bad</th>
             <th data-k="total" class="num">Total</th>
           </tr></thead>
           <tbody></tbody>
@@ -177,7 +177,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <th data-k="name">Dealer</th>
             <th data-k="active" class="num">Active</th>
             <th data-k="sold" class="num">Sold</th>
-            <th data-k="notSold" class="num" title="Not Sold: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has not sold.">Not Sold</th>
+            <th data-k="notSold" class="num" title="Bad: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has Bad.">Bad</th>
             <th data-k="total" class="num">Total</th>
           </tr></thead>
           <tbody></tbody>
@@ -193,7 +193,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <th data-k="name">Source</th>
             <th data-k="active" class="num">Active</th>
             <th data-k="sold" class="num">Sold</th>
-            <th data-k="notSold" class="num" title="Not Sold: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has not sold.">Not Sold</th>
+            <th data-k="notSold" class="num" title="Bad: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has Bad.">Bad</th>
             <th data-k="total" class="num">Total</th>
           </tr></thead>
           <tbody></tbody>
@@ -206,7 +206,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <th data-k="name">Rep</th>
             <th data-k="active" class="num">Active</th>
             <th data-k="sold" class="num">Sold</th>
-            <th data-k="notSold" class="num" title="Not Sold: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has not sold.">Not Sold</th>
+            <th data-k="notSold" class="num" title="Bad: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has Bad.">Bad</th>
             <th data-k="total" class="num">Total</th>
           </tr></thead>
           <tbody></tbody>
@@ -223,7 +223,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <option value="">All Statuses</option>
           <option value="active">Active</option>
           <option value="sold">Sold</option>
-          <option value="notSold">Not Sold</option>
+          <option value="notSold">Bad</option>
         </select>
         <select id="f-rep"><option value="">All Reps</option></select>
         <select id="f-source"><option value="">All Sources</option></select>
@@ -376,7 +376,7 @@ function renderTrend(){
     row.className = 'trend-row' + (t.key === currentKey ? ' is-current' : '');
     row.innerHTML = `
       <div class="trend-month">${t.label}</div>
-      <div class="trend-track" title="${t.active} active · ${t.sold} sold · ${t.notSold} not sold">
+      <div class="trend-track" title="${t.active} active · ${t.sold} sold · ${t.notSold} Bad">
         <div class="seg active" style="width:${pctA}%"></div>
         <div class="seg sold" style="width:${pctS}%"></div>
         <div class="seg notsold" style="width:${pctN}%"></div>

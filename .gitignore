@@ -1,0 +1,20 @@
+# Local Netlify folder
+.netlify
+
+# Dependencies (Netlify runs npm install on deploy; no need to commit this)
+node_modules/
+
+# Local secrets (Netlify env vars are set in the dashboard, not committed)
+.env
+.env.*
+
+# Claude Code local preview tooling (machine-specific ports, not part of the app)
+.claude/
+
+# Sample/test exports contain real customer PII (names, emails, phone numbers)
+# — never commit these. Keep them on disk locally for testing only.
+*.csv
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db

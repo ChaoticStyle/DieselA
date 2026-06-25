@@ -1,0 +1,8 @@
+{
+  "name": "garv-diesel-dashboard",
+  "version": "1.0.0",
+  "description": "Netlify functions for GARV Class A Diesels lead dashboard",
+  "dependencies": {
+    "@netlify/blobs": "^8.2.0"
+  }
+}

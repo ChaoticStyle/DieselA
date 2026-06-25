@@ -1,0 +1,35 @@
+[build]
+  command   = "echo 'No build step required'"
+  publish   = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# ─── API routes ─────────────────────────────────────────────
+# Automated ingest endpoint — called by the Google Apps Script bot.
+# Accepts the raw "Class A Diesels" CSV as JSON, runs server-side
+# aggregation, and writes blobs.
+[[redirects]]
+  from   = "/api/ingest"
+  to     = "/.netlify/functions/ingest"
+  status = 200
+
+[[redirects]]
+  from   = "/api/diesel"
+  to     = "/.netlify/functions/diesel-data"
+  status = 200
+
+# ─── CORS headers on all /api/* ─────────────────────────────
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin  = "*"
+    Access-Control-Allow-Methods = "GET, POST, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# ─── SPA fallback ───────────────────────────────────────────
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

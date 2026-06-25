@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARV Class A Diesels Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink0:#06090f; --ink1:#0b1119; --ink2:#101820; --ink3:#162030;
+  --card:#1b2738; --card2:#1f2e40;
+  --rule:#1d2d3e; --rule2:#253648;
+  --gold:#f5a623; --gold2:#ffbc47; --g-bg:rgba(245,166,35,.07); --g-bd:rgba(245,166,35,.22);
+  --grn:#22c55e;  --g2-bg:rgba(34,197,94,.07);
+  --red:#ef4444;  --r-bg:rgba(239,68,68,.07);
+  --blu:#3b82f6;  --b-bg:rgba(59,130,246,.07);
+  --t0:#dde9f5; --t1:#a3b6cc; --t2:#7a92ad; --t3:#5e7892;
+  --radius:7px; --radius2:11px;
+  --font:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Mono',ui-monospace,monospace;
+  --disp:'Bebas Neue',cursive;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;overflow-y:scroll}
+body{background:var(--ink0);color:var(--t0);font-family:var(--font);font-size:13px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--rule2);border-radius:3px}
+
+#topbar{position:sticky;top:0;z-index:300;background:rgba(11,17,25,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.wm-name{font-family:var(--disp);font-size:22px;letter-spacing:1px}
+.wm-name em{color:var(--gold);font-style:normal}
+.wm-sub{font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.tb-right{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--t2)}
+
+.btn{border:1px solid var(--rule2);border-radius:var(--radius);padding:7px 13px;font-size:12px;font-weight:500;cursor:pointer;background:var(--ink2);color:var(--t1);transition:.15s}
+.btn:hover{border-color:var(--t2);background:var(--ink3)}
+.btn-gold{background:var(--gold);border-color:var(--gold);color:#060a10;font-weight:700}
+.btn-gold:hover{background:var(--gold2)}
+
+main{max-width:1280px;margin:0 auto;padding:22px 24px 60px}
+
+/* ── period tabs ───────────────────────────────────────────── */
+#period-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.p-tab{border:1px solid var(--rule);border-radius:var(--radius);padding:7px 14px;font-size:12px;color:var(--t2);cursor:pointer;background:var(--card);transition:.15s}
+.p-tab:hover{color:var(--t1);border-color:var(--rule2)}
+.p-tab.active{color:#060a10;background:var(--gold);border-color:var(--gold);font-weight:700}
+
+/* ── KPI strip ─────────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.kpi{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius2);padding:18px 20px}
+.kpi-v{font-family:var(--disp);font-size:38px;line-height:1;margin-bottom:6px}
+.kpi-v.active{color:var(--gold)}.kpi-v.sold{color:var(--grn)}.kpi-v.notsold{color:var(--red)}.kpi-v.total{color:var(--t0)}
+.kpi-l{font-size:10px;color:var(--t2);letter-spacing:1.5px;text-transform:uppercase}
+
+/* ── section cards ─────────────────────────────────────────── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius2);padding:18px 20px}
+.card h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2);margin-bottom:14px;font-weight:600}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);padding:6px 8px;border-bottom:1px solid var(--rule2);cursor:pointer;user-select:none}
+th:hover{color:var(--t1)}
+th.sort-asc,th.sort-desc{color:var(--gold)}
+th.sort-asc::after{content:" \25B2";font-size:8px}
+th.sort-desc::after{content:" \25BC";font-size:8px}
+td{padding:7px 8px;border-bottom:1px solid var(--rule);color:var(--t1)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.num{font-family:var(--mono);text-align:right}
+
+/* ── shared Active/Sold/Not-Sold color coding ─────────────────── */
+.v-active{color:var(--gold)}
+.v-sold{color:var(--grn)}
+.v-notsold{color:var(--red)}
+
+/* ── trend table ───────────────────────────────────────────── */
+#trend{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.trend-row{display:grid;grid-template-columns:100px 1fr 56px 56px 64px 56px;align-items:center;gap:14px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.trend-row:last-child{border-bottom:none}
+.trend-row.is-current{background:var(--g-bg);border-radius:var(--radius);padding-left:8px;margin-left:-8px}
+.trend-row.trend-head{border-bottom:1px solid var(--rule2);padding-bottom:6px;margin-bottom:2px}
+.trend-head .trend-month{color:var(--t3);font-size:10px;letter-spacing:1px;text-transform:uppercase;font-family:var(--font)}
+.trend-head .trend-num{font-size:10px;letter-spacing:1px;text-transform:uppercase;font-family:var(--font)}
+.trend-head .trend-num:not(.v-active):not(.v-sold):not(.v-notsold){color:var(--t3)}
+.trend-month{font-size:12px;color:var(--t1);font-weight:500}
+.trend-track{height:20px;background:var(--ink2);border-radius:4px;overflow:hidden;display:flex}
+.trend-track .seg{height:100%}
+.trend-track .seg.active{background:var(--gold)}
+.trend-track .seg.sold{background:var(--grn)}
+.trend-track .seg.notsold{background:var(--red)}
+.trend-track .seg.empty{background:transparent}
+.trend-num{font-family:var(--mono);font-size:12px;color:var(--t2);text-align:right;white-space:nowrap}
+.trend-num b{font-weight:600}
+.trend-num.v-active{color:var(--gold)}
+.trend-num.v-sold{color:var(--grn)}
+.trend-num.v-notsold{color:var(--red)}
+
+/* ── filters / drill-down ──────────────────────────────────── */
+#filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+#filters select,#filters input{background:var(--ink2);border:1px solid var(--rule2);color:var(--t1);border-radius:var(--radius);padding:6px 10px;font-size:12px;font-family:var(--font)}
+
+.legend{display:flex;gap:14px;font-size:11px;color:var(--t2);margin-bottom:10px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+.dot.active{background:var(--gold)}.dot.sold{background:var(--grn)}.dot.notsold{background:var(--red)}
+
+#status{color:var(--t3);font-size:12px;padding:40px;text-align:center}
+
+@media (max-width: 760px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .trend-row{grid-template-columns:70px 1fr 40px 40px 48px 40px;gap:6px}
+  .trend-num{font-size:10px}
+  main{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div>
+    <div class="wm-name">GARV <em>Class A Diesels</em></div>
+    <div class="wm-sub" id="last-updated">Loading…</div>
+  </div>
+  <div class="tb-right">
+    <button class="btn" id="refresh-btn">Refresh</button>
+  </div>
+</div>
+
+<main>
+  <div id="status">Loading dashboard…</div>
+  <div id="app" style="display:none">
+
+    <div id="period-tabs"></div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-v active" id="kpi-active">0</div><div class="kpi-l">Active / Being Worked</div></div>
+      <div class="kpi"><div class="kpi-v sold" id="kpi-sold">0</div><div class="kpi-l">Sold</div></div>
+      <div class="kpi"><div class="kpi-v notsold" id="kpi-notsold">0</div><div class="kpi-l">Not Sold</div></div>
+      <div class="kpi"><div class="kpi-v total" id="kpi-total">0</div><div class="kpi-l">Total Leads</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Monthly Trend — Active / Sold / Not Sold</h3>
+      <div class="legend"><span><i class="dot active"></i>Active</span><span><i class="dot sold"></i>Sold</span><span><i class="dot notsold"></i>Not Sold</span></div>
+      <div class="trend-row trend-head">
+        <div class="trend-month">Month</div>
+        <div></div>
+        <div class="trend-num v-active">Active</div>
+        <div class="trend-num v-sold">Sold</div>
+        <div class="trend-num v-notsold">Not Sold</div>
+        <div class="trend-num">Total</div>
+      </div>
+      <div id="trend"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>By Product (Make / Model)</h3>
+        <table id="by-make-table">
+          <thead><tr>
+            <th data-k="name">Product</th>
+            <th data-k="active" class="num">Active</th>
+            <th data-k="sold" class="num">Sold</th>
+            <th data-k="notSold" class="num" title="Not Sold: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has not sold.">Not Sold</th>
+            <th data-k="total" class="num">Total</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>By Dealer (Store)</h3>
+        <table id="by-dealer-table">
+          <thead><tr>
+            <th data-k="name">Dealer</th>
+            <th data-k="active" class="num">Active</th>
+            <th data-k="sold" class="num">Sold</th>
+            <th data-k="notSold" class="num" title="Not Sold: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has not sold.">Not Sold</th>
+            <th data-k="total" class="num">Total</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>By Lead Source</h3>
+        <table id="by-source-table">
+          <thead><tr>
+            <th data-k="name">Source</th>
+            <th data-k="active" class="num">Active</th>
+            <th data-k="sold" class="num">Sold</th>
+            <th data-k="notSold" class="num" title="Not Sold: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has not sold.">Not Sold</th>
+            <th data-k="total" class="num">Total</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>By Sales Rep</h3>
+        <table id="rep-table">
+          <thead><tr>
+            <th data-k="name">Rep</th>
+            <th data-k="active" class="num">Active</th>
+            <th data-k="sold" class="num">Sold</th>
+            <th data-k="notSold" class="num" title="Not Sold: the lead's Lead Status Type is &quot;Bad&quot; (lost, dead, duplicate, no intent to buy, etc.) and it has not sold.">Not Sold</th>
+            <th data-k="total" class="num">Total</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Lead Drill-Down</h3>
+      <div id="filters">
+        <select id="f-dealer"><option value="">All Dealers</option></select>
+        <select id="f-make"><option value="">All Products</option></select>
+        <select id="f-status">
+          <option value="">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="sold">Sold</option>
+          <option value="notSold">Not Sold</option>
+        </select>
+        <select id="f-rep"><option value="">All Reps</option></select>
+        <select id="f-source"><option value="">All Sources</option></select>
+        <select id="f-source-group"><option value="">All Source Groups</option></select>
+      </div>
+      <div id="row-count" style="color:var(--t3);font-size:11px;margin-bottom:8px"></div>
+      <div style="max-height:480px;overflow:auto">
+        <table id="drill-table">
+          <thead><tr>
+            <th data-k="dealer">Dealer</th><th data-k="make">Make</th><th data-k="model">Model</th><th data-k="source">Lead Source</th>
+            <th data-k="status">Status</th><th data-k="rep">Sales Rep</th><th data-k="orig">Lead Origination</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+let DATA = null;
+let selectedPeriod = 'ytd';
+let repSort = { key: 'total', dir: -1 };
+let makeSort = { key: '', dir: 1 };
+let dealerSort = { key: '', dir: 1 };
+let sourceSort = { key: '', dir: 1 };
+
+function bucketFor(period){
+  if (!DATA) return null;
+  if (period === 'ytd') return DATA.ytd;
+  return DATA.months.find(m => m.key === period) || DATA.ytd;
+}
+
+function fmtDate(iso){
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+}
+
+async function loadData(){
+  document.getElementById('status').style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+  try{
+    const res = await fetch('/api/diesel', { cache: 'no-store' });
+    if (res.status === 404){
+      document.getElementById('status').textContent = 'No data yet — waiting for the next scheduled ingest.';
+      return;
+    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    DATA = await res.json();
+    document.getElementById('status').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('last-updated').textContent =
+      'Updated ' + fmtDate(DATA.uploadedAt) + ' · ' + (DATA.fileName || '') +
+      ' · Window ' + DATA.range.start + ' → ' + DATA.range.end;
+    renderPeriodTabs();
+    renderAll();
+    populateFilterOptions();
+  } catch(e){
+    document.getElementById('status').textContent = 'Failed to load: ' + e.message;
+  }
+}
+
+function renderPeriodTabs(){
+  const el = document.getElementById('period-tabs');
+  el.innerHTML = '';
+  const ytdTab = document.createElement('div');
+  ytdTab.className = 'p-tab' + (selectedPeriod==='ytd' ? ' active' : '');
+  ytdTab.textContent = 'Year to Date';
+  ytdTab.onclick = () => { selectedPeriod='ytd'; renderPeriodTabs(); renderAll(); };
+  el.appendChild(ytdTab);
+  DATA.months.forEach(m => {
+    const t = document.createElement('div');
+    t.className = 'p-tab' + (selectedPeriod===m.key ? ' active' : '');
+    t.textContent = m.label;
+    t.onclick = () => { selectedPeriod=m.key; renderPeriodTabs(); renderAll(); };
+    el.appendChild(t);
+  });
+}
+
+function renderAll(){
+  const b = bucketFor(selectedPeriod);
+  document.getElementById('kpi-active').textContent = b.active;
+  document.getElementById('kpi-sold').textContent = b.sold;
+  document.getElementById('kpi-notsold').textContent = b.notSold;
+  document.getElementById('kpi-total').textContent = b.total;
+
+  renderStatTable('by-make-table', b.byMake, makeSort);
+  renderStatTable('by-dealer-table', b.byDealer, dealerSort);
+  renderStatTable('by-source-table', b.bySource, sourceSort);
+  renderStatTable('rep-table', b.byRep, repSort);
+  renderTrend();
+  renderDrillDown();
+}
+
+function renderStatTable(tableId, list, sortState){
+  const tbody = document.querySelector('#' + tableId + ' tbody');
+  tbody.innerHTML = '';
+  const rows = (list || []).filter(r => r.name).slice();
+  if (sortState.key){
+    rows.sort((a,b) => (a[sortState.key] > b[sortState.key] ? 1 : a[sortState.key] < b[sortState.key] ? -1 : 0) * sortState.dir);
+  }
+  updateSortIndicators('#' + tableId, sortState);
+  if (!rows.length){
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--t3)">No data for this period.</td></tr>';
+    return;
+  }
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.name}</td><td class="num v-active">${r.active}</td><td class="num v-sold">${r.sold}</td><td class="num v-notsold">${r.notSold}</td><td class="num"><b style="color:var(--t0)">${r.total}</b></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+[
+  ['#by-make-table', makeSort],
+  ['#by-dealer-table', dealerSort],
+  ['#by-source-table', sourceSort],
+  ['#rep-table', repSort],
+].forEach(([selector, sortState]) => {
+  document.querySelectorAll(selector + ' th').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.k;
+      if (!k) return;
+      sortState.dir = (sortState.key === k) ? -sortState.dir : 1;
+      sortState.key = k;
+      renderAll();
+    });
+  });
+});
+
+function renderTrend(){
+  const el = document.getElementById('trend');
+  el.innerHTML = '';
+  const trend = DATA.trend || [];
+  if (!trend.length){ el.innerHTML = '<div style="color:var(--t3);font-size:12px">No monthly data yet.</div>'; return; }
+
+  const currentKey = (DATA.range && DATA.range.end) ? DATA.range.end.slice(0,7) : '';
+  const max = Math.max(...trend.map(t => t.active + t.sold + t.notSold), 1);
+
+  trend.forEach(t => {
+    const total = t.active + t.sold + t.notSold;
+    const pctA = total ? t.active/max*100 : 0;
+    const pctS = total ? t.sold/max*100 : 0;
+    const pctN = total ? t.notSold/max*100 : 0;
+    const pctEmpty = Math.max(0, 100 - pctA - pctS - pctN);
+
+    const row = document.createElement('div');
+    row.className = 'trend-row' + (t.key === currentKey ? ' is-current' : '');
+    row.innerHTML = `
+      <div class="trend-month">${t.label}</div>
+      <div class="trend-track" title="${t.active} active · ${t.sold} sold · ${t.notSold} not sold">
+        <div class="seg active" style="width:${pctA}%"></div>
+        <div class="seg sold" style="width:${pctS}%"></div>
+        <div class="seg notsold" style="width:${pctN}%"></div>
+        <div class="seg empty" style="width:${pctEmpty}%"></div>
+      </div>
+      <div class="trend-num v-active">${t.active}</div>
+      <div class="trend-num v-sold">${t.sold}</div>
+      <div class="trend-num v-notsold">${t.notSold}</div>
+      <div class="trend-num"><b style="color:var(--t0)">${total}</b></div>`;
+    el.appendChild(row);
+  });
+}
+
+function colIdx(name){ return DATA.H ? DATA.H[name] : undefined; }
+
+function periodMatchesRow(row){
+  const origIdx = colIdx('Lead Origination Date');
+  if (origIdx === undefined) return true;
+  const d = new Date(row[origIdx]);
+  if (isNaN(d)) return false;
+  if (selectedPeriod === 'ytd') return true;
+  const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  return key === selectedPeriod;
+}
+
+// Mirrors canonicalProduct() in netlify/functions/lib/diesel.mjs — CSV
+// exports are inconsistent about Make/Model casing, so every row is
+// normalized to one of the fixed PRODUCTS labels rather than whatever
+// string happens to appear in that row.
+function canonicalProductClient(make, model){
+  const products = (DATA && DATA.products) || [];
+  const byModelLenDesc = [...products].sort((a,b) => b.model.length - a.model.length);
+  const m = (model || '').trim().toLowerCase();
+  if (m){
+    for (const p of byModelLenDesc){
+      const pm = p.model.toLowerCase();
+      if (m === pm || m.includes(pm)) return p.make + ' ' + p.model;
+    }
+  }
+  const mk = (make || '').trim(), md = (model || '').trim();
+  return mk && md ? mk + ' ' + md : (mk || 'Other');
+}
+
+function rowStatus(row){
+  const soldIdx = colIdx('Sold Datetime');
+  const typeIdx = colIdx('Lead Status Type');
+  const soldDt = soldIdx !== undefined ? (row[soldIdx]||'').trim() : '';
+  const type = typeIdx !== undefined ? (row[typeIdx]||'').trim() : '';
+  if (soldDt || type === 'Sold') return 'sold';
+  if (type === 'Bad') return 'notSold';
+  return 'active';
+}
+
+function populateFilterOptions(){
+  if (!DATA.rows || !DATA.H) return;
+  const dealerIdx = colIdx('Dealer'), repIdx = colIdx('Sales Rep'), srcIdx = colIdx('Lead Source'),
+        srcGroupIdx = colIdx('Lead Source Group');
+  const dealers = new Set(), reps = new Set(), sources = new Set(), sourceGroups = new Set();
+  DATA.rows.forEach(r => {
+    if (dealerIdx!==undefined && r[dealerIdx]) dealers.add(r[dealerIdx].trim());
+    if (repIdx!==undefined && r[repIdx]) reps.add(r[repIdx].trim());
+    if (srcIdx!==undefined && r[srcIdx]) sources.add(r[srcIdx].trim());
+    if (srcGroupIdx!==undefined && r[srcGroupIdx]) sourceGroups.add(r[srcGroupIdx].trim());
+  });
+  fillSelect('f-dealer', dealers);
+  // Fixed 6-product list (canonical), not whatever casing/typos appear in the raw CSV.
+  const productLabels = (DATA.products || []).map(p => p.make + ' ' + p.model);
+  fillSelect('f-make', new Set(productLabels), false);
+  fillSelect('f-rep', reps);
+  fillSelect('f-source-group', sourceGroups);
+  fillSelect('f-source', sources);
+}
+function fillSelect(id, set, sortAlpha){
+  const el = document.getElementById(id);
+  const values = sortAlpha === false ? [...set] : [...set].sort();
+  values.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    el.appendChild(o);
+  });
+}
+
+function renderDrillDown(){
+  if (!DATA.rows || !DATA.H){ document.querySelector('#drill-table tbody').innerHTML=''; return; }
+  const dealerIdx = colIdx('Dealer'), makeIdx = colIdx('Make'), modelIdx = colIdx('Model'),
+        repIdx = colIdx('Sales Rep'), srcIdx = colIdx('Lead Source'), srcGroupIdx = colIdx('Lead Source Group'),
+        origIdx = colIdx('Lead Origination Date');
+
+  const fDealer = document.getElementById('f-dealer').value;
+  const fMake = document.getElementById('f-make').value;
+  const fStatus = document.getElementById('f-status').value;
+  const fRep = document.getElementById('f-rep').value;
+  const fSource = document.getElementById('f-source').value;
+  const fSourceGroup = document.getElementById('f-source-group').value;
+
+  const filtered = DATA.rows.filter(r => {
+    if (!periodMatchesRow(r)) return false;
+    if (fDealer && (r[dealerIdx]||'').trim() !== fDealer) return false;
+    if (fMake && canonicalProductClient(r[makeIdx], r[modelIdx]) !== fMake) return false;
+    if (fRep && (r[repIdx]||'').trim() !== fRep) return false;
+    if (fSource && (r[srcIdx]||'').trim() !== fSource) return false;
+    if (fSourceGroup && (r[srcGroupIdx]||'').trim() !== fSourceGroup) return false;
+    if (fStatus && rowStatus(r) !== fStatus) return false;
+    return true;
+  });
+
+  document.getElementById('row-count').textContent = filtered.length + ' leads match these filters.';
+
+  const getters = {
+    dealer: r => (r[dealerIdx]||''),
+    make:   r => (r[makeIdx]||''),
+    model:  r => (r[modelIdx]||''),
+    source: r => (r[srcIdx]||''),
+    status: r => rowStatus(r),
+    rep:    r => (r[repIdx]||''),
+    orig:   r => Date.parse(r[origIdx]||'') || 0,
+  };
+  if (drillSort.key){
+    const get = getters[drillSort.key];
+    filtered.sort((a,b) => {
+      const va = get(a), vb = get(b);
+      return (va > vb ? 1 : va < vb ? -1 : 0) * drillSort.dir;
+    });
+  }
+  updateSortIndicators('#drill-table', drillSort);
+
+  const tbody = document.querySelector('#drill-table tbody');
+  tbody.innerHTML = '';
+  filtered.slice(0, 500).forEach(r => {
+    const tr = document.createElement('tr');
+    const status = rowStatus(r);
+    tr.innerHTML = `<td>${r[dealerIdx]||''}</td><td>${r[makeIdx]||''}</td><td>${r[modelIdx]||''}</td>
+      <td>${r[srcIdx]||''}</td><td>${status}</td><td>${r[repIdx]||''}</td><td>${r[origIdx]||''}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+let drillSort = { key: '', dir: 1 };
+
+function updateSortIndicators(tableSelector, sortState){
+  document.querySelectorAll(tableSelector + ' th').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.k === sortState.key) th.classList.add(sortState.dir === 1 ? 'sort-asc' : 'sort-desc');
+  });
+}
+
+document.querySelectorAll('#drill-table th').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.k;
+    if (!k) return;
+    drillSort.dir = (drillSort.key === k) ? -drillSort.dir : 1;
+    drillSort.key = k;
+    renderDrillDown();
+  });
+});
+
+['f-dealer','f-make','f-status','f-rep','f-source','f-source-group'].forEach(id => {
+  document.getElementById(id).addEventListener('change', renderDrillDown);
+});
+
+document.getElementById('refresh-btn').onclick = loadData;
+
+loadData();
+</script>
+</body>
+</html>

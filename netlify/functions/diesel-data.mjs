@@ -37,13 +37,21 @@ export default async (request) => {
       const summary = await store.get('diesel_summary', { type: 'json' });
       if (!summary) return new Response('', { status: 404, headers: CORS });
 
-      const rowsBlob = await store.get('diesel_rows', { type: 'json' });
+      // Raw per-lead rows (which include the Sales Rep on each row) are
+      // gated behind DASHBOARD_PASSWORD — aggregates above stay public.
+      const expectedPassword = process.env.DASHBOARD_PASSWORD;
+      const suppliedPassword = new URL(request.url).searchParams.get('password')
+        || request.headers.get('x-dashboard-password');
+      const rowsUnlocked = !expectedPassword || suppliedPassword === expectedPassword;
+
+      const rowsBlob = rowsUnlocked ? await store.get('diesel_rows', { type: 'json' }) : null;
       const hist = await store.get('diesel_hist', { type: 'json' });
 
       return Response.json({
         ...stripPII(summary),
         rows: rowsBlob ? rowsBlob.rows : [],
         H: rowsBlob ? rowsBlob.H : null,
+        rowsLocked: !rowsUnlocked,
         hist: hist || [],
       }, { status: 200, headers: CORS });
     } catch (e) {

@@ -112,24 +112,6 @@ export function looksLikeDieselCSV(parsed) {
          H.LEAD_STATUS_TYPE !== undefined && H.SALES_REP !== undefined;
 }
 
-// ── PII column stripping ───────────────────────────────────────────────
-const PII_COLUMN_HEADERS = ['Customer', 'Email', 'Daytime Phone', 'Evening Phone', 'Cell Phone'];
-
-export function sanitizeRows(rows, H) {
-  const piiIdx = new Set();
-  if (H.allHeaders) {
-    for (let i = 0; i < H.allHeaders.length; i++) {
-      if (PII_COLUMN_HEADERS.includes(H.allHeaders[i])) piiIdx.add(i);
-    }
-  }
-  if (!piiIdx.size) return rows.map(r => r.slice());
-  return rows.map(row => {
-    const out = row.slice();
-    for (const i of piiIdx) if (i < out.length) out[i] = '';
-    return out;
-  });
-}
-
 // ── Date helpers ──────────────────────────────────────────────────────
 function parseDate(s) {
   if (!s) return null;

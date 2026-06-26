@@ -108,6 +108,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 #status{color:var(--t3);font-size:12px;padding:40px;text-align:center}
 
+/* ── drill-down password lock ─────────────────────────────────── */
+#drill-lock{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:20px 0}
+#drill-lock p{color:var(--t2);font-size:12px}
+#drill-lock-form{display:flex;gap:8px}
+#drill-lock-form input{background:var(--ink2);border:1px solid var(--rule2);color:var(--t1);border-radius:var(--radius);padding:7px 10px;font-size:12px;font-family:var(--font)}
+#drill-lock-error{color:var(--red);font-size:11px}
+
 @media (max-width: 760px){
   .kpi-row{grid-template-columns:repeat(2,1fr)}
   .grid2{grid-template-columns:1fr}
@@ -230,9 +237,20 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <select id="f-source-group"><option value="">All Source Groups</option></select>
       </div>
       <div id="row-count" style="color:var(--t3);font-size:11px;margin-bottom:8px"></div>
-      <div style="max-height:480px;overflow:auto">
+
+      <div id="drill-lock" style="display:none">
+        <p>This list is password protected. Enter the password to view the raw lead rows.</p>
+        <form id="drill-lock-form">
+          <input type="password" id="drill-lock-input" placeholder="Password" autocomplete="off">
+          <button type="submit" class="btn btn-gold">Unlock</button>
+        </form>
+        <div id="drill-lock-error"></div>
+      </div>
+
+      <div id="drill-content" style="max-height:480px;overflow:auto">
         <table id="drill-table">
           <thead><tr>
+            <th data-k="customer">Customer</th><th data-k="phone">Phone</th><th data-k="email">Email</th>
             <th data-k="dealer">Dealer</th><th data-k="make">Make</th><th data-k="model">Model</th><th data-k="source">Lead Source</th>
             <th data-k="status">Status</th><th data-k="rep">Sales Rep</th><th data-k="orig">Lead Origination</th>
           </tr></thead>
@@ -264,11 +282,14 @@ function fmtDate(iso){
   return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
 }
 
+let drillPassword = sessionStorage.getItem('drillPassword') || '';
+
 async function loadData(){
   document.getElementById('status').style.display = 'block';
   document.getElementById('app').style.display = 'none';
   try{
-    const res = await fetch('/api/diesel', { cache: 'no-store' });
+    const url = '/api/diesel' + (drillPassword ? ('?password=' + encodeURIComponent(drillPassword)) : '');
+    const res = await fetch(url, { cache: 'no-store' });
     if (res.status === 404){
       document.getElementById('status').textContent = 'No data yet — waiting for the next scheduled ingest.';
       return;
@@ -283,10 +304,33 @@ async function loadData(){
     renderPeriodTabs();
     renderAll();
     populateFilterOptions();
+    updateDrillLock();
   } catch(e){
     document.getElementById('status').textContent = 'Failed to load: ' + e.message;
   }
 }
+
+function updateDrillLock(){
+  const locked = !!DATA.rowsLocked;
+  document.getElementById('drill-lock').style.display = locked ? 'flex' : 'none';
+  document.getElementById('drill-content').style.display = locked ? 'none' : 'block';
+  if (locked && drillPassword){
+    // A stored password turned out to be wrong (or was revoked) — clear it.
+    sessionStorage.removeItem('drillPassword');
+    drillPassword = '';
+    document.getElementById('drill-lock-error').textContent = 'Incorrect password.';
+  }
+}
+
+document.getElementById('drill-lock-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const val = document.getElementById('drill-lock-input').value;
+  if (!val) return;
+  drillPassword = val;
+  sessionStorage.setItem('drillPassword', val);
+  document.getElementById('drill-lock-error').textContent = '';
+  loadData();
+});
 
 function renderPeriodTabs(){
   const el = document.getElementById('period-tabs');
@@ -463,7 +507,9 @@ function renderDrillDown(){
   if (!DATA.rows || !DATA.H){ document.querySelector('#drill-table tbody').innerHTML=''; return; }
   const dealerIdx = colIdx('Dealer'), makeIdx = colIdx('Make'), modelIdx = colIdx('Model'),
         repIdx = colIdx('Sales Rep'), srcIdx = colIdx('Lead Source'), srcGroupIdx = colIdx('Lead Source Group'),
-        origIdx = colIdx('Lead Origination Date');
+        origIdx = colIdx('Lead Origination Date'), customerIdx = colIdx('Customer'),
+        emailIdx = colIdx('Email'), dayPhoneIdx = colIdx('Daytime Phone'),
+        evePhoneIdx = colIdx('Evening Phone'), cellPhoneIdx = colIdx('Cell Phone');
 
   const fDealer = document.getElementById('f-dealer').value;
   const fMake = document.getElementById('f-make').value;
@@ -485,7 +531,12 @@ function renderDrillDown(){
 
   document.getElementById('row-count').textContent = filtered.length + ' leads match these filters.';
 
+  const rowPhone = r => (r[cellPhoneIdx]||'') || (r[dayPhoneIdx]||'') || (r[evePhoneIdx]||'');
+
   const getters = {
+    customer: r => (r[customerIdx]||''),
+    phone:  rowPhone,
+    email:  r => (r[emailIdx]||''),
     dealer: r => (r[dealerIdx]||''),
     make:   r => (r[makeIdx]||''),
     model:  r => (r[modelIdx]||''),
@@ -508,7 +559,8 @@ function renderDrillDown(){
   filtered.slice(0, 500).forEach(r => {
     const tr = document.createElement('tr');
     const status = rowStatus(r);
-    tr.innerHTML = `<td>${r[dealerIdx]||''}</td><td>${r[makeIdx]||''}</td><td>${r[modelIdx]||''}</td>
+    tr.innerHTML = `<td>${r[customerIdx]||''}</td><td>${rowPhone(r)}</td><td>${r[emailIdx]||''}</td>
+      <td>${r[dealerIdx]||''}</td><td>${r[makeIdx]||''}</td><td>${r[modelIdx]||''}</td>
       <td>${r[srcIdx]||''}</td><td>${status}</td><td>${r[repIdx]||''}</td><td>${r[origIdx]||''}</td>`;
     tbody.appendChild(tr);
   });

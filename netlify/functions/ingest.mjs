@@ -9,7 +9,6 @@ import {
   parseDieselCSV,
   looksLikeDieselCSV,
   aggregate,
-  sanitizeRows,
 } from './lib/diesel.mjs';
 
 const CORS = {
@@ -85,10 +84,12 @@ export default async (request) => {
     // 2. Public aggregates (returned by GET /api/diesel)
     await blobStore.setJSON('diesel_summary', summary);
 
-    // 3. PII-stripped row cache for client-side drill-down filtering
-    const cleanRows = sanitizeRows(parsed.rows, parsed.H);
+    // 3. Row cache for client-side drill-down filtering. Includes full
+    //    customer PII (Customer/Email/phones) — access to this blob is
+    //    gated by DASHBOARD_PASSWORD in diesel-data.mjs, not by stripping
+    //    columns here.
     await blobStore.setJSON('diesel_rows', {
-      rows: cleanRows,
+      rows: parsed.rows,
       H: parsed.H,
       fileName: displayName,
       uploadedAt,

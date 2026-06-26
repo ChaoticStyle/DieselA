@@ -112,6 +112,30 @@ export function looksLikeDieselCSV(parsed) {
          H.LEAD_STATUS_TYPE !== undefined && H.SALES_REP !== undefined;
 }
 
+// ── Lead dedup ────────────────────────────────────────────────────────
+// The VinSolutions export joins each lead to its showroom visits, so a
+// lead with multiple visits comes through as multiple otherwise-identical
+// rows. Collapse those down to one row per lead before aggregating/
+// displaying, keyed on the fields that identify the lead itself (not the
+// visit-specific columns that legitimately vary row to row).
+function dedupeKey(row, H) {
+  return [H.CUSTOMER, H.EMAIL, H.CELL_PHONE, H.DEALER, H.VIN, H.LEAD_SOURCE, H.LEAD_ORIG, H.SALES_REP]
+    .map(i => (i !== undefined ? (row[i] || '').trim().toLowerCase() : ''))
+    .join('|');
+}
+
+export function dedupeRows(rows, H) {
+  const seen = new Set();
+  const out = [];
+  for (const row of rows) {
+    const key = dedupeKey(row, H);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+  return out;
+}
+
 // ── Date helpers ──────────────────────────────────────────────────────
 function parseDate(s) {
   if (!s) return null;

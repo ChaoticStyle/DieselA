@@ -9,6 +9,7 @@ import {
   parseDieselCSV,
   looksLikeDieselCSV,
   aggregate,
+  dedupeRows,
 } from './lib/diesel.mjs';
 
 const CORS = {
@@ -56,6 +57,10 @@ export default async (request) => {
       { status: 400, headers: CORS }
     );
   }
+
+  // Collapse multi-visit duplicate rows down to one row per lead before
+  // counting or caching anything.
+  parsed.rows = dedupeRows(parsed.rows, parsed.H);
 
   let summary;
   try {
